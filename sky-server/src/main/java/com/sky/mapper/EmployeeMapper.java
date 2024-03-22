@@ -31,5 +31,27 @@ public interface EmployeeMapper {
     void insert(Employee employee);
 
 
+    /*
+     * @desc 员工分页查询
+     * @param employeePageQueryDTO
+     * @date 2024/3/21 21:28
+     **/
     Page<Employee> pageQuery(EmployeePageQueryDTO employeePageQueryDTO);
+
+
+    /*
+     * @desc 启用/禁用员工账号
+     * @param employee
+     * @date 2024/3/21 21:49
+     **/
+    void update(Employee employee);
+
+
+    /*
+     * @desc 查询员工信息
+     * @param id
+     * @date 2024/3/22 9:50
+     **/
+    @Select("select * from employee where id = #{id}")
+    Employee getById(Long id);
 }

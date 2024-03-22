@@ -40,50 +40,50 @@ public class EmployeeServiceImpl implements EmployeeService {
         String username = employeeLoginDTO.getUsername();
         String password = employeeLoginDTO.getPassword();
 
-        //1、根据用户名查询数据库中的数据
+        // 1、根据用户名查询数据库中的数据
         Employee employee = employeeMapper.getByUsername(username);
 
-        //2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
+        // 2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
         if (employee == null) {
-            //账号不存在
+            // 账号不存在
             throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
 
-        //密码比对
+        // 密码比对
         password = DigestUtils.md5DigestAsHex(password.getBytes());
         if (!password.equals(employee.getPassword())) {
-            //密码错误
+            // 密码错误
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
 
-        //账号被锁定
+        // 账号被锁定
         if (employee.getStatus() == StatusConstant.DISABLE) {
             throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
         }
 
-        //3、返回实体对象
+        // 3、返回实体对象
         return employee;
     }
 
 
     /**
-     * @desc 新增员工
      * @param employeeDTO
+     * @desc 新增员工
      * @date 2024/3/20 11:08
      **/
     @Override
     public void save(EmployeeDTO employeeDTO) {
         Employee employee = new Employee();
-        //属性拷贝
-        BeanUtils.copyProperties(employeeDTO,employee);
-        //密码，默认为123456，需MD5加密
+        // 属性拷贝
+        BeanUtils.copyProperties(employeeDTO, employee);
+        // 密码，默认为123456，需MD5加密
         employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
-        //状态。默认为1开启
+        // 状态。默认为1开启
         employee.setStatus(StatusConstant.ENABLE);
-        //创建时间和修改时间
+        // 创建时间和修改时间
         employee.setCreateTime(LocalDateTime.now());
         employee.setUpdateTime(LocalDateTime.now());
-        //创建和最后一次修改用户id，即为此新增员工id,使用ThreadLocal
+        // 创建和最后一次修改用户id，即为此新增员工id,使用ThreadLocal
         employee.setCreateUser(BaseContext.getCurrentId());
         employee.setUpdateUser(BaseContext.getCurrentId());
 
@@ -98,11 +98,58 @@ public class EmployeeServiceImpl implements EmployeeService {
      **/
     @Override
     public PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
-        PageHelper.startPage(employeePageQueryDTO.getPage(),employeePageQueryDTO.getPageSize());
+        // bug:当模糊查询结果数小于pageSize时，但前端发送过来的page>=2，那么显示结果为空。
+        // 修复不了，前端写的有问题
+        PageHelper.startPage(employeePageQueryDTO.getPage(), employeePageQueryDTO.getPageSize());
         Page<Employee> page = employeeMapper.pageQuery(employeePageQueryDTO);
         List<Employee> result = page.getResult();
         long total = page.getTotal();
-        return new PageResult(total,result);
+        return new PageResult(total, result);
+    }
+
+
+    /*
+     * @desc 启用/禁用员工账号
+     * @param status
+     * @param id
+     * @date 2024/3/21 21:25
+     **/
+    @Override
+    public void startOrStop(Integer status, Long id) {
+        Employee employee = Employee.builder()
+                .id(id)
+                .status(status)
+                .build();
+
+        employeeMapper.update(employee);
+    }
+
+
+    /*
+     * @desc 查询员工信息
+     * @param id
+     * @date 2024/3/22 9:50
+     **/
+    @Override
+    public Employee getById(Long id) {
+        Employee employee = employeeMapper.getById(id);
+        employee.setPassword(PasswordConstant.NOT_DISPLAY_PASSWORD);
+        return employee;
+    }
+
+    
+    /*
+     * @desc 编辑员工信息
+     * @param employeeDTO
+     * @date 2024/3/22 10:03
+     **/
+    @Override
+    public void update(EmployeeDTO employeeDTO) {
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO,employee);
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+        employeeMapper.update(employee);
     }
 
 }

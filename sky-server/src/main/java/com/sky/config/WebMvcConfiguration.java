@@ -88,6 +88,5 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
         converter.setObjectMapper(new JacksonObjectMapper());
         //将创建的消息转换器加入框架的容器中,并设置优先级为0，即最优先
         converters.add(0,converter);
-        //
     }
 }
